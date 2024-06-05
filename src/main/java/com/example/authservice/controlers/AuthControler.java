@@ -5,6 +5,7 @@ import com.example.authservice.Exceptions.TokenNotValidException;
 import com.example.authservice.Exceptions.UserAlreadyExist;
 import com.example.authservice.Exceptions.UserNotFound;
 import com.example.authservice.dtos.*;
+import com.example.authservice.models.SessionStatus;
 import com.example.authservice.services.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,20 +52,36 @@ public class AuthControler {
         return responseEntity;
     }
 
+//    @PostMapping("/validate")
+//    public ResponseEntity<UserDto> validate(@RequestBody ValidateRequestDto validateRequestDto) throws TokenExpiredException {
+//
+//
+//        try {
+//            ResponseEntity<UserDto> responseEntity = authService.validate(validateRequestDto.getToken(),validateRequestDto.getUserId());
+//            return responseEntity;
+//        } catch (TokenExpiredException e) {
+//            throw new RuntimeException(e);
+//        } catch (TokenNotValidException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//
+//    }
+
     @PostMapping("/validate")
-    public ResponseEntity<UserDto> validate(@RequestBody ValidateRequestDto validateRequestDto) throws TokenExpiredException {
+    public ResponseEntity<ValidatetokenResponseDto> validateToken(@RequestBody ValidateRequestDto request) throws TokenExpiredException, TokenNotValidException {
+        Optional<UserDto> userDto = authService.validate(request.getToken(), request.getUserId());
 
-
-        try {
-            ResponseEntity<UserDto> responseEntity = authService.validate(validateRequestDto.getToken(),validateRequestDto.getUserId());
-            return responseEntity;
-        } catch (TokenExpiredException e) {
-            throw new RuntimeException(e);
-        } catch (TokenNotValidException e) {
-            throw new RuntimeException(e);
+        if (userDto.isEmpty()) {
+            ValidatetokenResponseDto response = new ValidatetokenResponseDto();
+            response.setSessionStatus(SessionStatus.INVALID);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         }
 
-
+        ValidatetokenResponseDto response = new ValidatetokenResponseDto();
+        response.setSessionStatus(SessionStatus.ACTIVE);
+        response.setUserDto(userDto.get());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 }

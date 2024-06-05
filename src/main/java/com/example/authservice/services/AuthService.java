@@ -18,6 +18,7 @@ import com.example.authservice.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -31,16 +32,17 @@ public class AuthService {
     private UserRepository userRepository;
     private SessionRepository sessionRepository;
 
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+ //   private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    //custom password Encoder in SecurityConfig
+    private PasswordEncoder passwordEncoder;
 
 
-
-
-    public AuthService(UserRepository userRepository,SessionRepository sessionRepository)
+    public AuthService(UserRepository userRepository,SessionRepository sessionRepository,PasswordEncoder passwordEncoder)
     {
         this.userRepository=userRepository;
         this.sessionRepository=sessionRepository;
-        bCryptPasswordEncoder=new BCryptPasswordEncoder();
+        this.passwordEncoder=passwordEncoder;
 
     }
 
@@ -55,10 +57,10 @@ public class AuthService {
 
         User user=new User();
         user.setEmail(email);
-        user.setPassword(bCryptPasswordEncoder.encode(password));
+        user.setPassword(passwordEncoder.encode(password));
 
         User user1=userRepository.save(user);
-        return UserDto.from(user);
+        return UserDto.from(user1);
 
     }
 
@@ -70,7 +72,7 @@ public class AuthService {
            throw new UserNotFound("User with email: " + email + " doesn't exist.");
        }
        User user=optionalUser.get();
-       if(!bCryptPasswordEncoder.matches(password, user.getPassword()))
+       if(!passwordEncoder.matches(password, user.getPassword()))
        {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
        }
@@ -145,9 +147,9 @@ public class AuthService {
         }
     }
 
-    public ResponseEntity<UserDto> validate(String token,Long userId) throws TokenExpiredException, TokenNotValidException {
+    public Optional<UserDto> validate(String token,Long userId) throws TokenExpiredException, TokenNotValidException {
         try {
-            DecodedJWT jwt = JWT.decode(token);
+           // DecodedJWT jwt = JWT.decode(token);
 
             // Get the algorithm from the decoded JWT
             Algorithm algorithm = Algorithm.HMAC256("Arun");
@@ -176,7 +178,7 @@ public class AuthService {
             }
 
            User user= userRepository.findById(userId);
-            return new ResponseEntity<>(UserDto.from(user),HttpStatus.OK);
+            return Optional.of(UserDto.from(user));
 
         }
         catch (JWTVerificationException exception){
